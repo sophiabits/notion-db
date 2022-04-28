@@ -1,0 +1,29 @@
+{
+  "name": "notion-db",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf lib",
+    "prepare": "npm run clean && npm run build"
+  },
+  "author": {
+    "name": "Sophia Willows",
+    "email": "sophia.willows@hey.com",
+    "url": "https://sophiabits.com"
+  },
+  "bugs": "https://github.com/sophiabits/notion-db/issues",
+  "repository": "github:sophiabits/notion-db",
+  "devDependencies": {
+    "rimraf": "^3.0.2",
+    "typescript": "^4.6.3"
+  },
+  "files": [
+    "lib",
+    "package.json",
+    "README.md"
+  ]
+}
