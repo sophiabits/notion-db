@@ -15,7 +15,6 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
 
-    "baseUrl": "./src",
     "noEmitOnError": true,
     "outDir": "lib",
     "sourceMap": true,
