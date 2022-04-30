@@ -16,7 +16,6 @@ export class Connection {
       auth: apiToken,
     });
     const dbs = await fetchDatabasesMap(client);
-    console.log('got dbs:', dbs);
 
     const connection = new Connection(client, dbs);
     return connection;
