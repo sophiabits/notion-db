@@ -2,10 +2,14 @@ import _ from 'lodash';
 
 import type {
   NotionDatabase,
+  NotionParentDatabase,
   NotionProperty,
   NotionPropertyDefinition,
+  NotionPropertyInput,
   NotionRecord,
+  NotionRecordInput,
   PropertiesMap,
+  WithId,
 } from './internal/types';
 import type { BaseEntity } from './types';
 
@@ -27,24 +31,48 @@ export function mapNotionToEntity<E extends BaseEntity>(
   };
 }
 
+export function mapEntityToNotion<E extends BaseEntity>(
+  entity: E,
+  database: NotionDatabase,
+  propertiesMap: PropertiesMap,
+): WithId<NotionRecordInput>;
 export function mapEntityToNotion<E extends {}>(
   entity: E,
   database: NotionDatabase,
   propertiesMap: PropertiesMap,
-): Omit<NotionRecord, 'id'> {
-  return {
-    parent: { database_id: database.id, type: 'database_id' },
-    properties: Object.fromEntries(
-      Object.entries(entity).map(([key, value]) => {
-        const notionPropertyName = propertiesMap[key];
-        const notionPropertyDefinition = database.properties[notionPropertyName];
-        return [notionPropertyName, getNotionValueFromJS(notionPropertyDefinition, value)];
-      }),
-    ),
+): NotionRecordInput;
+export function mapEntityToNotion<E extends BaseEntity | {}>(
+  entity: E,
+  database: NotionDatabase,
+  propertiesMap: PropertiesMap,
+): NotionRecordInput | WithId<NotionRecordInput> {
+  const parent: NotionParentDatabase = {
+    database_id: database.id,
+    type: 'database_id',
   };
+
+  const properties = Object.fromEntries(
+    Object.entries(entity).map(([key, value]) => {
+      const notionPropertyName = propertiesMap[key];
+      const notionPropertyDefinition = database.properties[notionPropertyName];
+      return [notionPropertyName, getNotionValueFromJS(notionPropertyDefinition, value)];
+    }),
+  );
+
+  if ('id' in entity) {
+    return { id: entity.id, parent, properties };
+  } else {
+    return {
+      parent,
+      properties,
+    };
+  }
 }
 
-function getNotionValueFromJS(definition: NotionPropertyDefinition, value: unknown) {
+function getNotionValueFromJS(
+  definition: NotionPropertyDefinition,
+  value: unknown,
+): NotionPropertyInput {
   // TODO
   return value as any;
 }

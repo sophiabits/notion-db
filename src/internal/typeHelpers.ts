@@ -6,4 +6,4 @@ export type ExtractArrayType<T> = T extends Array<infer E>
   ? E
   : never;
 
-export type RecordValues<T> = T extends Record<infer K, infer V> ? V : never;
+export type RecordValues<R> = R extends Record<infer K, infer V> ? V : never;
