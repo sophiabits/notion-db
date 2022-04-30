@@ -6,8 +6,4 @@ export type ExtractArrayType<T> = T extends Array<infer E>
   ? E
   : never;
 
-export type GetFromUnion<Union, Property extends keyof Union, Value> = Union extends any
-  ? Union[Property] extends Value
-    ? Union
-    : never
-  : never;
+export type RecordValues<T> = T extends Record<infer K, infer V> ? V : never;

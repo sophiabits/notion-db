@@ -1,6 +1,12 @@
 import _ from 'lodash';
 
-import type { NotionDatabase, NotionProperty, NotionRecord, PropertiesMap } from './internal/types';
+import type {
+  NotionDatabase,
+  NotionProperty,
+  NotionPropertyDefinition,
+  NotionRecord,
+  PropertiesMap,
+} from './internal/types';
 import type { BaseEntity } from './types';
 
 export function mapNotionToEntity<E extends BaseEntity>(
@@ -21,16 +27,26 @@ export function mapNotionToEntity<E extends BaseEntity>(
   };
 }
 
-export function mapEntityToNotion<E extends BaseEntity>(
-  database: NotionDatabase,
+export function mapEntityToNotion<E extends {}>(
   entity: E,
-): NotionRecord {
-  // TODO
+  database: NotionDatabase,
+  propertiesMap: PropertiesMap,
+): Omit<NotionRecord, 'id'> {
   return {
     parent: { database_id: database.id, type: 'database_id' },
-    id: entity.id,
-    properties: {},
+    properties: Object.fromEntries(
+      Object.entries(entity).map(([key, value]) => {
+        const notionPropertyName = propertiesMap[key];
+        const notionPropertyDefinition = database.properties[notionPropertyName];
+        return [notionPropertyName, getNotionValueFromJS(notionPropertyDefinition, value)];
+      }),
+    ),
   };
+}
+
+function getNotionValueFromJS(definition: NotionPropertyDefinition, value: unknown) {
+  // TODO
+  return value as any;
 }
 
 function getJSValueFromNotion(property: NotionProperty) {
