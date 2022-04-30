@@ -3,7 +3,7 @@ import { buildQuery } from '../QueryBuilder';
 import { BaseEntity } from '../types';
 
 interface Entity extends BaseEntity {
-  is_checked: boolean;
+  isChecked: boolean;
   name: string;
   state: string;
   ttl: number;
@@ -19,25 +19,25 @@ describe('QueryBuilder', () => {
     parent: { type: 'workspace', workspace: true },
     properties: {
       // @ts-ignore
-      is_checked: {
+      'Is Checked': {
         id: 'foo',
         checkbox: {},
         type: 'checkbox',
       },
       // @ts-ignore
-      name: {
+      Name: {
         id: 'bar',
         rich_text: {},
         type: 'rich_text',
       },
       // @ts-ignore
-      state: {
+      State: {
         id: 'baz',
         select: { options: [] },
         type: 'select',
       },
       // @ts-ignore
-      ttl: {
+      TTL: {
         id: 'qux',
         number: { format: 'real' },
         type: 'number',
@@ -46,7 +46,12 @@ describe('QueryBuilder', () => {
   };
   const mockMetadata: DatabaseMetadata = {
     id: 'abcd-efgh',
-    propertiesMap: {},
+    propertiesMap: {
+      isChecked: 'Is Checked',
+      name: 'Name',
+      state: 'State',
+      ttl: 'TTL',
+    },
   };
 
   describe('empty', () => {
@@ -69,11 +74,11 @@ describe('QueryBuilder', () => {
   describe('booleans', () => {
     it('can $eq', () => {
       const query = buildQuery<Entity>(mockDatabase, mockMetadata, {
-        is_checked: { $eq: true },
+        isChecked: { $eq: true },
       });
 
       expectFilter(query, [
-        { checkbox: { equals: true }, property: 'is_checked', type: 'checkbox' },
+        { checkbox: { equals: true }, property: 'Is Checked', type: 'checkbox' },
       ]);
     });
   });
@@ -84,7 +89,7 @@ describe('QueryBuilder', () => {
         ttl: { $lt: 42 },
       });
 
-      expectFilter(query, [{ number: { less_than: 42 }, property: 'ttl', type: 'number' }]);
+      expectFilter(query, [{ number: { less_than: 42 }, property: 'TTL', type: 'number' }]);
     });
   });
 
@@ -94,7 +99,7 @@ describe('QueryBuilder', () => {
         state: { $eq: 'foobar' },
       });
 
-      expectFilter(query, [{ select: { equals: 'foobar' }, property: 'state', type: 'select' }]);
+      expectFilter(query, [{ select: { equals: 'foobar' }, property: 'State', type: 'select' }]);
     });
   });
 
@@ -105,7 +110,7 @@ describe('QueryBuilder', () => {
       });
 
       expectFilter(query, [
-        { rich_text: { equals: 'foobar' }, property: 'name', type: 'rich_text' },
+        { rich_text: { equals: 'foobar' }, property: 'Name', type: 'rich_text' },
       ]);
     });
   });

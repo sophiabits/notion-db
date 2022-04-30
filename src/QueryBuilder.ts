@@ -34,22 +34,23 @@ export function buildQuery<EntityType extends BaseEntity>(
     const selector = filter[key as keyof Filter<EntityType>];
     if (!selector || Object.keys(selector).length === 0) continue;
 
-    const definition = database.properties[key];
+    const notionProperty = meta.propertiesMap[key];
+    const definition = database.properties[notionProperty];
     if (!definition) {
       throw new Error(`Invalid filter property: ${key}`);
     }
 
     switch (definition.type) {
       case 'checkbox':
-        pushBooleanSelector(conditions, definition.type, key, selector);
+        pushBooleanSelector(conditions, definition.type, notionProperty, selector);
         break;
 
       case 'number':
-        pushNumericSelector(conditions, definition.type, key, selector);
+        pushNumericSelector(conditions, definition.type, notionProperty, selector);
         break;
 
       case 'select':
-        pushSelectSelector(conditions, definition.type, key, selector);
+        pushSelectSelector(conditions, definition.type, notionProperty, selector);
         break;
 
       case 'email':
@@ -57,7 +58,7 @@ export function buildQuery<EntityType extends BaseEntity>(
       case 'rich_text':
       case 'title':
       case 'url':
-        pushStringSelector(conditions, definition.type, key, selector);
+        pushStringSelector(conditions, definition.type, notionProperty, selector);
         break;
     }
   }
