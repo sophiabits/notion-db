@@ -37,11 +37,11 @@ export class Repository<EntityType extends BaseEntity> {
     return _.first(data);
   }
 
-  async findById(id: string) {
-    const entity = await this.findOne({
-      id: { $eq: id },
+  async findById(id: string): Promise<EntityType> {
+    const entity = await this.client.pages.retrieve({
+      page_id: id,
     });
-    return entity;
+    return mapNotionToEntity<EntityType>(entity as any, this.meta.propertiesMap);
   }
 
   // Update
