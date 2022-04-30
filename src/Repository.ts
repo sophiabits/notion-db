@@ -5,6 +5,8 @@ import { assert, isNotionDatabase } from './internal/typeguards';
 
 import type { DatabaseMetadata, NotionDatabase } from './internal/types';
 import type { BaseEntity, Filter } from './types';
+
+import { buildQuery } from './QueryBuilder';
 import { mapNotionToEntity } from './EntityMapper';
 
 export class Repository<EntityType extends BaseEntity> {
@@ -23,9 +25,9 @@ export class Repository<EntityType extends BaseEntity> {
   // Find
 
   async find(filter: Filter<EntityType>): Promise<EntityType[]> {
-    const response = await this.client.databases.query({
-      database_id: this.meta.id,
-    });
+    const query = buildQuery(await this.getNotionDatabase(), this.meta, filter);
+    const response = await this.client.databases.query(query);
+
     return response.results.map((it) => mapNotionToEntity(it as any, this.meta.propertiesMap));
   }
 
@@ -63,7 +65,10 @@ export class Repository<EntityType extends BaseEntity> {
   }
 
   async deleteById(id: string) {
-    //
+    await this.client.pages.update({
+      page_id: id,
+      archived: true,
+    });
   }
 
   private async getNotionDatabase(): Promise<NotionDatabase> {
