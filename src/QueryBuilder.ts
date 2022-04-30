@@ -35,7 +35,9 @@ export function buildQuery<EntityType extends BaseEntity>(
     if (!selector || Object.keys(selector).length === 0) continue;
 
     const definition = database.properties[key];
-    if (!definition) continue;
+    if (!definition) {
+      throw new Error(`Invalid filter property: ${key}`);
+    }
 
     switch (definition.type) {
       case 'checkbox':
@@ -75,7 +77,7 @@ function pushBooleanSelector(
 ) {
   const filter: NotionCheckboxPropertyFilter = {
     equals: selector.$eq,
-    does_not_equal: selector.$eq,
+    does_not_equal: selector.$ne,
   };
 
   conditions.push({
