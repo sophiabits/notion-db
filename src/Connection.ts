@@ -30,7 +30,11 @@ async function fetchDatabasesList(client: Client): Promise<NotionDatabase[]> {
   const data: NotionDatabase[] = [];
   for (const it of searchResponse.results) {
     if (it.object === 'database') {
-      data.push(it);
+      if ('title' in it) {
+        data.push(it);
+      } else {
+        console.warn(`Found incomplete DB result with id: ${it.id}`);
+      }
     }
   }
   return data;
