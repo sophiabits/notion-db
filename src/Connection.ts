@@ -4,6 +4,8 @@ import { Client } from '@notionhq/client';
 import { isNotionDatabase } from './internal/typeguards';
 import type { DatabaseMetadata, NotionDatabase } from './internal/types';
 
+import { Repository } from './Repository';
+
 type DatabaseMap = Map<string, DatabaseMetadata>;
 
 export class Connection {
@@ -14,13 +16,19 @@ export class Connection {
       auth: apiToken,
     });
     const dbs = await fetchDatabasesMap(client);
+    console.log('got dbs:', dbs);
 
     const connection = new Connection(client, dbs);
     return connection;
   }
 
   database(name: string) {
-    // TODO
+    const db = this.dbs.get(name);
+    if (!db) {
+      throw new Error(`Could not find database with name "${name}"`);
+    }
+
+    return new Repository(this.client, db);
   }
 }
 

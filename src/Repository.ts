@@ -1,10 +1,14 @@
 import _ from 'lodash';
+import { Client } from '@notionhq/client';
 
-import { Connection } from './Connection';
+import { assert, isNotionDatabase } from './internal/typeguards';
+
+import type { DatabaseMetadata, NotionDatabase } from './internal/types';
 import type { BaseEntity, Filter } from './types';
+import { mapNotionToEntity } from './EntityMapper';
 
 export class Repository<EntityType extends BaseEntity> {
-  constructor(private connection: Connection) {}
+  constructor(private client: Client, private meta: DatabaseMetadata) {}
 
   async count(filter: Filter<EntityType>) {
     //
@@ -19,7 +23,10 @@ export class Repository<EntityType extends BaseEntity> {
   // Find
 
   async find(filter: Filter<EntityType>): Promise<EntityType[]> {
-    return [];
+    const response = await this.client.databases.query({
+      database_id: this.meta.id,
+    });
+    return response.results.map((it) => mapNotionToEntity(it as any, this.meta.propertiesMap));
   }
 
   async findOne(filter: Filter<EntityType>) {
@@ -57,5 +64,18 @@ export class Repository<EntityType extends BaseEntity> {
 
   async deleteById(id: string) {
     //
+  }
+
+  private async getNotionDatabase(): Promise<NotionDatabase> {
+    try {
+      const notion = await this.client.databases.retrieve({
+        database_id: this.meta.id,
+      });
+      assert(isNotionDatabase(notion));
+
+      return notion;
+    } catch (error) {
+      throw new Error(`Failed to fetch Notion database (id=${this.meta.id})`);
+    }
   }
 }

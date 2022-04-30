@@ -13,7 +13,9 @@ export type NotionRecord = {
 };
 
 // Internal metadata
+export type PropertiesMap = Record<string, string>;
+
 export interface DatabaseMetadata {
   id: string;
-  propertiesMap: Record<string, string>;
+  propertiesMap: PropertiesMap;
 }
