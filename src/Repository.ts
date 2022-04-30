@@ -13,7 +13,8 @@ export class Repository<EntityType extends BaseEntity> {
   constructor(private client: Client, private meta: DatabaseMetadata) {}
 
   async count(filter: Filter<EntityType>) {
-    //
+    const data = await this.find(filter);
+    return data.length;
   }
 
   // Create
