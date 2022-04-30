@@ -38,7 +38,10 @@ export class Repository<EntityType extends BaseEntity> {
   }
 
   async findById(id: string) {
-    //
+    const entity = await this.findOne({
+      id: { $eq: id },
+    });
+    return entity;
   }
 
   // Update
@@ -58,11 +61,17 @@ export class Repository<EntityType extends BaseEntity> {
   // Delete
 
   async delete(filter: Filter<EntityType>) {
-    //
+    const entities = await this.find(filter);
+    for (const entity of entities) {
+      await this.deleteById(entity.id);
+    }
   }
 
   async deleteOne(filter: Filter<EntityType>) {
-    //
+    const entity = await this.findOne(filter);
+    if (entity) {
+      await this.deleteById(entity.id);
+    }
   }
 
   async deleteById(id: string) {
