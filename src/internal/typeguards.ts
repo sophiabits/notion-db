@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import { NotionDatabase } from '../types';
+import type { NotionDatabase } from './types';
 
 export function isNotionDatabase(x: unknown): x is NotionDatabase {
   return (

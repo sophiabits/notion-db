@@ -1,7 +1,8 @@
+import _ from 'lodash';
 import { Client } from '@notionhq/client';
 
 import { isNotionDatabase } from './internal/typeguards';
-import type { NotionDatabase } from './types';
+import type { NotionDatabase } from './internal/types';
 
 export class Connection {
   private constructor(private client: Client, private dbs: NotionDatabase[]) {}
