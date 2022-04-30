@@ -1,3 +1,1 @@
-const value = 42;
-
-export default value;
+export * from './Connection';
