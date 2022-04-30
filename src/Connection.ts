@@ -1,5 +1,6 @@
 import { Client } from '@notionhq/client';
 
+import { isNotionDatabase } from './internal/typeguards';
 import type { NotionDatabase } from './types';
 
 export class Connection {
@@ -29,12 +30,10 @@ async function fetchDatabasesList(client: Client): Promise<NotionDatabase[]> {
 
   const data: NotionDatabase[] = [];
   for (const it of searchResponse.results) {
-    if (it.object === 'database') {
-      if ('title' in it) {
-        data.push(it);
-      } else {
-        console.warn(`Found incomplete DB result with id: ${it.id}`);
-      }
+    if (isNotionDatabase(it)) {
+      data.push(it);
+    } else {
+      console.warn(`Found non-DB search result with id: ${it.id}`);
     }
   }
   return data;
