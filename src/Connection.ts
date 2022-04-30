@@ -5,6 +5,7 @@ import { isNotionDatabase } from './internal/typeguards';
 import type { DatabaseMetadata, NotionDatabase } from './internal/types';
 
 import { Repository } from './Repository';
+import type { BaseEntity } from './types';
 
 type DatabaseMap = Map<string, DatabaseMetadata>;
 
@@ -21,13 +22,13 @@ export class Connection {
     return connection;
   }
 
-  database(name: string) {
+  database<EntityType extends BaseEntity = BaseEntity>(name: string) {
     const db = this.dbs.get(name);
     if (!db) {
       throw new Error(`Could not find database with name "${name}"`);
     }
 
-    return new Repository(this.client, db);
+    return new Repository<EntityType>(this.client, db);
   }
 }
 
