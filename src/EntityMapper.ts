@@ -47,7 +47,8 @@ function getJSValueFromNotion(property: NotionProperty) {
     // case 'formula':
     // case 'last_edited_by':
     // case 'last_edited_time':
-    // case 'multi_select':
+    case 'multi_select':
+      return property.multi_select.map((it) => it.name);
     case 'number':
       return property.number;
     // case 'people':
@@ -57,8 +58,8 @@ function getJSValueFromNotion(property: NotionProperty) {
     // case 'relation':
     // case 'rich_text':
     // case 'rollup':
-    // case 'select':
-    // case 'title':
+    case 'select':
+      return property.select?.name ?? null;
     case 'title':
       if (Array.isArray(property.title)) {
         return property.title.reduce((acc, it) => acc + it.plain_text, '');
