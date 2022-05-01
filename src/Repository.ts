@@ -7,7 +7,9 @@ import type { DatabaseMetadata, NotionDatabase } from './internal/types';
 import type { BaseEntity, Filter } from './types';
 
 import { buildQuery } from './QueryBuilder';
-import { mapNotionToEntity } from './EntityMapper';
+import { mapEntityToNotion, mapNotionToEntity, normalizeNotionProperties } from './EntityMapper';
+
+type EntityUpdater<EntityType extends BaseEntity> = Partial<Omit<EntityType, 'id'>>;
 
 export class Repository<EntityType extends BaseEntity> {
   constructor(private client: Client, private meta: DatabaseMetadata) {}
@@ -20,7 +22,18 @@ export class Repository<EntityType extends BaseEntity> {
   // Create
 
   async create(data: Omit<EntityType, 'id'>) {
-    //
+    const db = await this.getNotionDatabase();
+    const notion = mapEntityToNotion(data, db, this.meta.propertiesMap);
+
+    // @ts-ignore Notion's types are awful
+    const response = await this.client.pages.create(notion);
+    assert('properties' in response);
+
+    const properties = normalizeNotionProperties(response.properties);
+    return mapNotionToEntity(
+      { id: response.id, parent: { database_id: this.meta.id, type: 'database_id' }, properties },
+      this.meta.propertiesMap,
+    );
   }
 
   // Find
@@ -38,24 +51,61 @@ export class Repository<EntityType extends BaseEntity> {
   }
 
   async findById(id: string): Promise<EntityType> {
-    const entity = await this.client.pages.retrieve({
+    const record = await this.client.pages.retrieve({
       page_id: id,
     });
-    return mapNotionToEntity<EntityType>(entity as any, this.meta.propertiesMap);
+    assert('properties' in record);
+
+    return mapNotionToEntity<EntityType>(
+      {
+        id: record.id,
+        parent: { database_id: this.meta.id, type: 'database_id' },
+        properties: normalizeNotionProperties(record.properties),
+      },
+      this.meta.propertiesMap,
+    );
   }
 
   // Update
 
-  async update(filter: Filter<EntityType>, update: Partial<Omit<EntityType, 'id'>>) {
-    //
+  async update(filter: Filter<EntityType>, update: EntityUpdater<EntityType>) {
+    const queryResults = await this.find(filter);
+    const updatedEntities: EntityType[] = [];
+    for (const entity of queryResults) {
+      const updatedEntity = await this.updateById(entity.id, update);
+      updatedEntities.push(updatedEntity);
+    }
+    return updatedEntities;
   }
 
-  async updateOne(filter: Filter<EntityType>, update: Partial<Omit<EntityType, 'id'>>) {
-    //
+  async updateOne(filter: Filter<EntityType>, update: EntityUpdater<EntityType>) {
+    const entity = await this.findOne(filter);
+    if (entity) {
+      const updatedEntity = await this.updateById(entity.id, update);
+      return updatedEntity;
+    }
   }
 
-  async updateById(id: string, update: Partial<Omit<EntityType, 'id'>>) {
-    //
+  async updateById(id: string, update: EntityUpdater<EntityType>) {
+    const db = await this.getNotionDatabase();
+
+    const mappedUpdate = mapEntityToNotion(update, db, this.meta.propertiesMap);
+
+    const updatedRecord = await this.client.pages.update({
+      page_id: id,
+      properties: mappedUpdate.properties,
+      archived: false,
+    });
+    assert('properties' in updatedRecord);
+
+    return mapNotionToEntity<EntityType>(
+      {
+        id: updatedRecord.id,
+        parent: { database_id: this.meta.id, type: 'database_id' },
+        properties: normalizeNotionProperties(updatedRecord.properties),
+      },
+      this.meta.propertiesMap,
+    );
   }
 
   // Delete

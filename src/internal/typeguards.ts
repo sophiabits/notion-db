@@ -8,6 +8,10 @@ export function assert(x: boolean): asserts x {
   }
 }
 
+export function assertUnreachable(x: never): never {
+  throw new Error('Programming Error: Unreachable code block reached');
+}
+
 export function isNotionDatabase(x: unknown): x is NotionDatabase {
   return (
     typeof x === 'object' &&

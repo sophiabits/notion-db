@@ -1,16 +1,18 @@
 import _ from 'lodash';
+import { assertUnreachable } from './internal/typeguards';
 
 import type {
   NotionDatabase,
   NotionParentDatabase,
-  NotionProperty,
   NotionPropertyDefinition,
   NotionPropertyInput,
   NotionRecord,
   NotionRecordInput,
+  NotionUpsertPropertiesMap,
   PropertiesMap,
-  WithId,
+  NotionPropertySafe,
 } from './internal/types';
+import type { RecordValues } from './internal/typeHelpers';
 import type { BaseEntity } from './types';
 
 export function mapNotionToEntity<E extends BaseEntity>(
@@ -18,11 +20,12 @@ export function mapNotionToEntity<E extends BaseEntity>(
   propertiesMap: PropertiesMap,
 ): E {
   const notionPropToJs = _.invert(propertiesMap);
+  const notionProperties = normalizeNotionProperties(notion.properties);
 
   // @ts-ignore
   return {
     ...Object.fromEntries(
-      Object.entries(notion.properties).map(([key, value]) => [
+      Object.entries(notionProperties).map(([key, value]) => [
         notionPropToJs[key],
         getJSValueFromNotion(value),
       ]),
@@ -31,21 +34,11 @@ export function mapNotionToEntity<E extends BaseEntity>(
   };
 }
 
-export function mapEntityToNotion<E extends BaseEntity>(
-  entity: E,
-  database: NotionDatabase,
-  propertiesMap: PropertiesMap,
-): WithId<NotionRecordInput>;
 export function mapEntityToNotion<E extends {}>(
   entity: E,
   database: NotionDatabase,
   propertiesMap: PropertiesMap,
-): NotionRecordInput;
-export function mapEntityToNotion<E extends BaseEntity | {}>(
-  entity: E,
-  database: NotionDatabase,
-  propertiesMap: PropertiesMap,
-): NotionRecordInput | WithId<NotionRecordInput> {
+): NotionRecordInput {
   const parent: NotionParentDatabase = {
     database_id: database.id,
     type: 'database_id',
@@ -55,18 +48,65 @@ export function mapEntityToNotion<E extends BaseEntity | {}>(
     Object.entries(entity).map(([key, value]) => {
       const notionPropertyName = propertiesMap[key];
       const notionPropertyDefinition = database.properties[notionPropertyName];
-      return [notionPropertyName, getNotionValueFromJS(notionPropertyDefinition, value)];
+      return [notionPropertyName, getNotionValueFromJS(notionPropertyDefinition as any, value)];
     }),
   );
 
-  if ('id' in entity) {
-    return { id: entity.id, parent, properties };
-  } else {
-    return {
-      parent,
-      properties,
-    };
+  return {
+    parent,
+    properties,
+  };
+}
+
+export function normalizeNotionProperties(
+  input: NotionUpsertPropertiesMap,
+): Record<string, NotionPropertySafe> {
+  const properties: Record<string, NotionPropertySafe> = {};
+
+  for (const [key, value] of Object.entries<RecordValues<NotionUpsertPropertiesMap>>(input)) {
+    switch (value.type) {
+      case 'rich_text':
+        if (Array.isArray(value.rich_text)) {
+          properties[key] = {
+            // TODO this does not seem robust
+            rich_text: _.first(value.rich_text)!,
+            type: 'rich_text',
+          };
+        } else {
+          properties[key] = {
+            rich_text: value.rich_text,
+            type: 'rich_text',
+          };
+        }
+        break;
+      case 'title':
+        if (Array.isArray(value.title)) {
+          properties[key] = {
+            // TODO this does not seem robust
+            title: _.first(value.title)!,
+            type: 'title',
+          };
+        } else {
+          properties[key] = {
+            title: value.title,
+            type: 'title',
+          };
+        }
+        break;
+
+      case 'checkbox':
+      case 'email':
+      case 'multi_select':
+      case 'number':
+      case 'phone_number':
+      case 'select':
+      case 'url':
+        properties[key] = value;
+        break;
+    }
   }
+
+  return properties;
 }
 
 function getNotionValueFromJS(
@@ -77,31 +117,20 @@ function getNotionValueFromJS(
   return value as any;
 }
 
-function getJSValueFromNotion(property: NotionProperty) {
+function getJSValueFromNotion(property: NotionPropertySafe) {
   switch (property.type) {
     case 'checkbox':
       return property.checkbox;
-
-    // case 'created_by':
-    // case 'created_time':
-    // case 'date':
     case 'email':
       return property.email;
-    // case 'files':
-    // case 'formula':
-    // case 'last_edited_by':
-    // case 'last_edited_time':
     case 'multi_select':
       return property.multi_select.map((it) => it.name);
     case 'number':
       return property.number;
-    // case 'people':
     case 'phone_number':
       return property.phone_number;
-    // case 'property_item':
-    // case 'relation':
-    // case 'rich_text':
-    // case 'rollup':
+    case 'rich_text':
+      return property.rich_text;
     case 'select':
       return property.select?.name ?? null;
     case 'title':
@@ -110,11 +139,10 @@ function getJSValueFromNotion(property: NotionProperty) {
       } else {
         return property.title.plain_text;
       }
-
     case 'url':
       return property.url;
 
     default:
-      console.error('Unknown property:', property);
+      assertUnreachable(property);
   }
 }
