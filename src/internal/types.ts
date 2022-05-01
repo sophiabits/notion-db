@@ -19,7 +19,8 @@ type SupportedNotionPropertyTypes =
   | 'title'
   | 'url';
 
-// Notion API types
+// == Notion API types
+
 export type NotionDatabase = Extract<
   SearchResponse['results'][number],
   { object: 'database'; title: any[] }
@@ -29,32 +30,52 @@ export type NotionParentDatabase = {
   database_id: string;
 };
 
-export type NotionUpsertPropertiesMap =
+/**
+ * Notion has a slightly different `properties` type across get, create, & update
+ * requests. This type is a union of all the different possible API responses.
+ *
+ * This type should be normalized into
+ */
+export type NotionPropertiesMap =
   | Record<string, NotionPropertyRaw>
   | Extract<CreatePageResponse, { properties: any }>['properties']
   | Extract<UpdatePageResponse, { properties: any }>['properties'];
 
+/** Schema for a particular property inside {@link NotionDatabase} */
 export type NotionPropertyDefinition = RecordValues<NotionDatabase['properties']>;
-export type NotionPropertyRaw = OmitUnion<GetPagePropertyResponse, 'id' | 'object'>;
+type NotionPropertyRaw = OmitUnion<GetPagePropertyResponse, 'id' | 'object'>;
+
+/**
+ * Normalized Notion property type, derived from {@link NotionPropertiesMap}
+ */
+export type NotionPropertyDefinitionSafe = Extract<
+  NotionPropertyDefinition,
+  { type: SupportedNotionPropertyTypes }
+>;
 export type NotionPropertySafe = Extract<NotionPropertyRaw, { type: SupportedNotionPropertyTypes }>;
+export type NotionPropertiesMapSafe = Record<string, NotionPropertySafe>;
+
+/**
+ * Notion database record retrieved from the API.
+ */
 export type NotionRecord = {
   id: string;
   parent: NotionParentDatabase;
   properties: Record<string, NotionPropertyRaw>;
 };
+
 // Used for creating new Notion records
 export type NotionPropertyInput = Extract<
   Exclude<RecordValues<CreatePageParameters['properties']>, boolean | number | string>,
   { type?: SupportedNotionPropertyTypes }
 >;
-export type NotionPropertiesInput = CreatePageParameters['properties'];
-
 export type NotionRecordInput = {
   parent: NotionParentDatabase;
   properties: Record<string, NotionPropertyInput>;
 };
 
-// Internal metadata
+// == Library types
+
 export type PropertiesMap = Record<string, string>;
 
 export interface DatabaseMetadata {

@@ -5,12 +5,13 @@ import type {
   NotionDatabase,
   NotionParentDatabase,
   NotionPropertyDefinition,
+  NotionPropertyDefinitionSafe,
   NotionPropertyInput,
+  NotionPropertySafe,
+  NotionPropertiesMap,
   NotionRecord,
   NotionRecordInput,
-  NotionUpsertPropertiesMap,
   PropertiesMap,
-  NotionPropertySafe,
 } from './internal/types';
 import type { RecordValues } from './internal/typeHelpers';
 import type { BaseEntity } from './types';
@@ -45,11 +46,18 @@ export function mapEntityToNotion<E extends {}>(
   };
 
   const properties = Object.fromEntries(
-    Object.entries(entity).map(([key, value]) => {
-      const notionPropertyName = propertiesMap[key];
-      const notionPropertyDefinition = database.properties[notionPropertyName];
-      return [notionPropertyName, getNotionValueFromJS(notionPropertyDefinition as any, value)];
-    }),
+    _.compact(
+      Object.entries(entity).map(([key, value]) => {
+        const notionPropertyName = propertiesMap[key];
+        const notionPropertyDefinition = database.properties[notionPropertyName];
+
+        if (isSupportedProperty(notionPropertyDefinition)) {
+          return [notionPropertyName, getNotionValueFromJS(notionPropertyDefinition, value)];
+        } else {
+          return null;
+        }
+      }),
+    ),
   );
 
   return {
@@ -59,11 +67,11 @@ export function mapEntityToNotion<E extends {}>(
 }
 
 export function normalizeNotionProperties(
-  input: NotionUpsertPropertiesMap,
+  input: NotionPropertiesMap,
 ): Record<string, NotionPropertySafe> {
   const properties: Record<string, NotionPropertySafe> = {};
 
-  for (const [key, value] of Object.entries<RecordValues<NotionUpsertPropertiesMap>>(input)) {
+  for (const [key, value] of Object.entries<RecordValues<NotionPropertiesMap>>(input)) {
     switch (value.type) {
       case 'rich_text':
         if (Array.isArray(value.rich_text)) {
@@ -109,11 +117,49 @@ export function normalizeNotionProperties(
   return properties;
 }
 
+function isSupportedProperty(
+  property: NotionPropertyDefinition,
+): property is NotionPropertyDefinitionSafe {
+  const { type } = property;
+  return (
+    type === 'checkbox' ||
+    type === 'email' ||
+    type === 'multi_select' ||
+    type === 'number' ||
+    type === 'phone_number' ||
+    type === 'rich_text' ||
+    type === 'select' ||
+    type === 'title'
+  );
+}
+
 function getNotionValueFromJS(
-  definition: NotionPropertyDefinition,
+  definition: NotionPropertyDefinitionSafe,
   value: unknown,
 ): NotionPropertyInput {
-  // TODO
+  switch (definition.type) {
+    case 'checkbox':
+      break;
+    case 'email':
+      break;
+    case 'multi_select':
+      break;
+    case 'number':
+      break;
+    case 'phone_number':
+      break;
+    case 'rich_text':
+      break;
+    case 'select':
+      break;
+    case 'title':
+      break;
+    case 'url':
+      break;
+    default:
+      assertUnreachable(definition);
+  }
+
   return value as any;
 }
 
