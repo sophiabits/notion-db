@@ -139,28 +139,41 @@ function getNotionValueFromJS(
 ): NotionPropertyInput {
   switch (definition.type) {
     case 'checkbox':
-      break;
+      return { checkbox: value as boolean, type: 'checkbox' };
     case 'email':
-      break;
-    case 'multi_select':
-      break;
-    case 'number':
-      break;
     case 'phone_number':
-      break;
-    case 'rich_text':
-      break;
-    case 'select':
-      break;
-    case 'title':
-      break;
     case 'url':
-      break;
+      // @ts-ignore
+      return { [definition.type]: value as string, type: definition.type };
+
+    case 'multi_select':
+      return {
+        multi_select: (value as any[]).map((v) => ({ name: v })),
+        type: 'multi_select',
+      };
+    case 'number':
+      return { number: value as number, type: 'number' };
+    case 'rich_text':
+      return {
+        rich_text: [{ text: { content: value as string } }],
+        type: 'rich_text',
+      };
+    case 'select':
+      return {
+        select: {
+          name: value as string, // | null
+        },
+        type: 'select',
+      };
+    case 'title':
+      return {
+        title: [{ text: { content: value as string } }],
+        type: 'title',
+      };
+
     default:
       assertUnreachable(definition);
   }
-
-  return value as any;
 }
 
 function getJSValueFromNotion(property: NotionPropertySafe) {
